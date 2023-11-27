@@ -1,0 +1,23 @@
+---
+apiVersion: policy.karmada.io/v1alpha1
+kind: PropagationPolicy
+metadata:
+  name: xline
+  namespace: xline
+spec:
+  resourceSelectors:
+    - apiVersion: xlineoperator.xline.cloud/v1alpha1
+      kind: XlineCluster
+      namespace: xline
+  placement:
+    clusterAffinity:
+      clusterNames:
+        - member1
+        - member2
+    spreadConstraints:
+      - minGroups: 2
+        maxGroups: 3
+        spreadByField: cluster
+    replicaScheduling:
+      replicaDivisionPreference: Weighted
+      replicaSchedulingType: Divided

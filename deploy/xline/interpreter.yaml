@@ -1,0 +1,23 @@
+apiVersion: config.karmada.io/v1alpha1
+kind: ResourceInterpreterCustomization
+metadata:
+  name: xlinecluster
+spec:
+  target:
+    apiVersion: xlineoperator.xline.cloud/v1alpha1
+    kind: XlineCluster
+  customizations:
+    replicaResource:
+      luaScript: >
+        local kube = require("kube")
+        function GetReplicas(obj)
+          replica = obj.spec.size
+          requirement = {}
+          return replica, requirement
+        end
+    replicaRevision:
+      luaScript: >
+        function ReviseReplica(obj, desiredReplica)
+          obj.spec.size = desiredReplica
+          return obj
+        end

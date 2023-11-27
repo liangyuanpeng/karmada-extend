@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: karmada-extend
+  namespace: karmada-system
+  labels:
+    app: karmada-extend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: karmada-extend
+  template:
+    metadata:
+      labels:
+        app: karmada-extend
+    spec:
+      automountServiceAccountToken: false
+      volumes:
+      - secret:
+          secretName: kubeconfig
+        name: kubeconfig
+      containers:
+      - name: karmada-extend
+        image: ghcr.io/liangyuanpeng/karmada-extend:v0.0.1
+        command:
+            - /bin/karmada-extend
+        volumeMounts:
+        - name: kubeconfig
+          subPath: kubeconfig
+          mountPath: /etc/kubeconfig

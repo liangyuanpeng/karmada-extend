@@ -1,2 +1,3 @@
-# karmada-rbw
-karmada resourcesbinding watcher
+# karmada-extend
+
+karmada extend
