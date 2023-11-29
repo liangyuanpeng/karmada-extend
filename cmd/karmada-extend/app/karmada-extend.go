@@ -9,7 +9,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/liangyuanpeng/karmada-extend/pkg/server"
+	karmadaclientset "github.com/karmada-io/karmada/pkg/generated/clientset/versioned"
+	"github.com/karmada-io/karmada/pkg/scheduler/framework/runtime"
+	"github.com/karmada-io/karmada/pkg/sharedcli"
+	"github.com/karmada-io/karmada/pkg/sharedcli/klogflag"
+	"github.com/karmada-io/karmada/pkg/sharedcli/profileflag"
+	"github.com/karmada-io/karmada/pkg/version"
+	"github.com/karmada-io/karmada/pkg/version/sharedcommand"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -24,14 +30,8 @@ import (
 	"k8s.io/klog/v2"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
-	karmadaclientset "github.com/karmada-io/karmada/pkg/generated/clientset/versioned"
-	"github.com/karmada-io/karmada/pkg/scheduler/framework/runtime"
-	"github.com/karmada-io/karmada/pkg/sharedcli"
-	"github.com/karmada-io/karmada/pkg/sharedcli/klogflag"
-	"github.com/karmada-io/karmada/pkg/sharedcli/profileflag"
-	"github.com/karmada-io/karmada/pkg/version"
-	"github.com/karmada-io/karmada/pkg/version/sharedcommand"
 	"github.com/liangyuanpeng/karmada-extend/cmd/karmada-extend/app/options"
+	"github.com/liangyuanpeng/karmada-extend/pkg/server"
 )
 
 const (

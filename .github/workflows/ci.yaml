@@ -1,0 +1,44 @@
+name: CI
+on:
+  # Run this workflow every time a new commit pushed to upstream/fork repository.
+  # Run workflow on fork repository will help contributors find and resolve issues before sending a PR.
+  push:
+  pull_request:
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.actor }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+
+  golangci:
+    name: lint
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+      - name: install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.10
+      - name: lint
+        run: hack/verify-staticcheck.sh
+      - name: import alias
+        run: hack/verify-import-aliases.sh
+
+  build:
+    name: compile
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+        with:
+          # Number of commits to fetch. 0 indicates all history for all branches and tags.
+          # We need to guess version via git tags.
+          fetch-depth: 0
+      - name: install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.10
+      - name: compile
+        run: make build
+

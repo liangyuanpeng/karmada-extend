@@ -9,16 +9,6 @@ import (
 	"strings"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog/v2"
-
 	policyv1alpha1 "github.com/karmada-io/karmada/pkg/apis/policy/v1alpha1"
 	workv1alpha2 "github.com/karmada-io/karmada/pkg/apis/work/v1alpha2"
 	karmadaclientset "github.com/karmada-io/karmada/pkg/generated/clientset/versioned"
@@ -26,10 +16,17 @@ import (
 	worklister "github.com/karmada-io/karmada/pkg/generated/listers/work/v1alpha2"
 	"github.com/karmada-io/karmada/pkg/scheduler/metrics"
 	"github.com/karmada-io/karmada/pkg/sharedcli/ratelimiterflag"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -159,8 +156,7 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 	if len(rb.Spec.Clusters) <= 0 {
 		return nil
 	}
-	kextentNS := "karmada-system"
-	kextentNS = rb.Namespace
+	kextentNS := rb.Namespace
 	data := make(map[string]string)
 
 	matchClusters := []string{}
@@ -242,7 +238,6 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 		clusterDatas[c.Name] = clusterdata
 
 		s.addOverrideRules(op, clusterDatas, c.Name)
-
 	}
 
 	return s.createOPOrUpdate(op)
@@ -314,7 +309,6 @@ func (s *KarmadaExtend) createOPOrUpdate(op *policyv1alpha1.OverridePolicy) erro
 }
 
 func (s *KarmadaExtend) addOverrideRules(op *policyv1alpha1.OverridePolicy, clusterDatas map[string]map[string]string, cluster string) {
-
 	jsonValue, _ := json.Marshal(clusterDatas[cluster])
 
 	rwc := policyv1alpha1.RuleWithCluster{
