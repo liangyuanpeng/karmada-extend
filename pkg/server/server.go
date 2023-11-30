@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -149,6 +148,13 @@ func (s *KarmadaExtend) doReconcile(key string) error {
 	return s.generateConfigMapFromRB(rb)
 }
 
+type ScheduleInfo struct {
+	ClusterName string `json:"clusterName"`
+	Replicas    int32  `json:"replicas"`
+	ClusterId   string `json:"clusterId"`
+	IsSelf      bool   `json:"isSelf"`
+}
+
 func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding) error {
 	if strings.HasPrefix(rb.Name, PREFIX_NAME) {
 		return nil
@@ -157,13 +163,21 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 		return nil
 	}
 	kextentNS := rb.Namespace
-	data := make(map[string]string)
+	data := make(map[string]*ScheduleInfo)
 
 	matchClusters := []string{}
 	for _, c := range rb.Spec.Clusters {
-		data[c.Name] = strconv.FormatInt(int64(c.Replicas), 10)
+		si := &ScheduleInfo{
+			ClusterName: c.Name,
+			Replicas:    c.Replicas,
+		}
+		// data[c.Name] = strconv.FormatInt(int64(c.Replicas), 10)
+		data[c.Name] = si
 		matchClusters = append(matchClusters, c.Name)
 	}
+
+	defaultData := make(map[string]string)
+	defaultData["a"] = "a"
 
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -173,7 +187,7 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 				*metav1.NewControllerRef(rb, rb.GroupVersionKind()),
 			},
 		},
-		Data: data,
+		Data: defaultData,
 	}
 	log.Println("reconcile to createOrUpdate configmap:", cm.Name)
 	if _, err := s.KubeClient.CoreV1().ConfigMaps(kextentNS).Create(context.TODO(), cm, metav1.CreateOptions{}); err != nil {
@@ -192,8 +206,6 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 			return fmt.Errorf("unable to update ConfigMap: %v", err)
 		}
 	}
-
-	clusterDatas := make(map[string]map[string]string)
 
 	cm, err := s.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Get(context.TODO(), cm.Name, metav1.GetOptions{})
 	if err != nil {
@@ -226,18 +238,21 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 		return nil
 	}
 
+	log.Println("data:", data)
 	for _, c := range rb.Spec.Clusters {
-		clusterdata := make(map[string]string)
-		for name, v := range data {
-			if name == c.Name {
-				clusterdata["self"] = v
-			} else {
-				clusterdata[name] = v
+		clusterdata := make(map[string]*ScheduleInfo)
+		for name, _ := range data {
+			si := &ScheduleInfo{
+				ClusterName: c.Name,
+				Replicas:    c.Replicas,
 			}
+			if name == c.Name {
+				si.IsSelf = true
+			}
+			clusterdata[c.Name] = si
 		}
-		clusterDatas[c.Name] = clusterdata
 
-		s.addOverrideRules(op, clusterDatas, c.Name)
+		s.addOverrideRules(op, clusterdata, c.Name)
 	}
 
 	return s.createOPOrUpdate(op)
@@ -308,8 +323,10 @@ func (s *KarmadaExtend) createOPOrUpdate(op *policyv1alpha1.OverridePolicy) erro
 	return nil
 }
 
-func (s *KarmadaExtend) addOverrideRules(op *policyv1alpha1.OverridePolicy, clusterDatas map[string]map[string]string, cluster string) {
-	jsonValue, _ := json.Marshal(clusterDatas[cluster])
+func (s *KarmadaExtend) addOverrideRules(op *policyv1alpha1.OverridePolicy, clusterDatas map[string]*ScheduleInfo, cluster string) {
+	// log.Println("clusterDatas:",clusterDatas)
+	jsonValue, _ := json.Marshal(clusterDatas)
+	log.Println("clusterData.jsonValue:", string(jsonValue))
 
 	rwc := policyv1alpha1.RuleWithCluster{
 		TargetCluster: &policyv1alpha1.ClusterAffinity{
