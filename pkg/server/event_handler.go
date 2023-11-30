@@ -1,6 +1,12 @@
 package server
 
 import (
+	policyv1alpha1 "github.com/karmada-io/karmada/pkg/apis/policy/v1alpha1"
+	"github.com/karmada-io/karmada/pkg/scheduler/metrics"
+	"github.com/karmada-io/karmada/pkg/util"
+	"github.com/karmada-io/karmada/pkg/util/fedinformer"
+	"github.com/karmada-io/karmada/pkg/util/gclient"
+	"github.com/karmada-io/karmada/pkg/util/helper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -8,14 +14,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
-
-	policyv1alpha1 "github.com/karmada-io/karmada/pkg/apis/policy/v1alpha1"
-	workv1alpha2 "github.com/karmada-io/karmada/pkg/apis/work/v1alpha2"
-	"github.com/karmada-io/karmada/pkg/scheduler/metrics"
-	"github.com/karmada-io/karmada/pkg/util"
-	"github.com/karmada-io/karmada/pkg/util/fedinformer"
-	"github.com/karmada-io/karmada/pkg/util/gclient"
-	"github.com/karmada-io/karmada/pkg/util/helper"
 )
 
 // addAllEventHandlers is a helper function used in KarmadaExtend
@@ -102,17 +100,6 @@ func (s *KarmadaExtend) onResourceBindingUpdate(old, cur interface{}) {
 
 	s.queue.Add(key)
 	metrics.CountSchedulerBindings(metrics.BindingUpdate)
-}
-
-func (s *KarmadaExtend) onResourceBindingRequeue(binding *workv1alpha2.ResourceBinding, event string) {
-	key, err := cache.MetaNamespaceKeyFunc(binding)
-	if err != nil {
-		klog.Errorf("couldn't get key for ResourceBinding(%s/%s): %v", binding.Namespace, binding.Name, err)
-		return
-	}
-	klog.Infof("Requeue ResourceBinding(%s/%s) due to event(%s).", binding.Namespace, binding.Name, event)
-	s.queue.Add(key)
-	metrics.CountSchedulerBindings(event)
 }
 
 // func (s *KarmadaExtend) onClusterResourceBindingRequeue(clusterResourceBinding *workv1alpha2.ClusterResourceBinding, event string) {
