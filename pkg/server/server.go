@@ -156,7 +156,7 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 	if len(rb.Spec.Clusters) <= 0 {
 		return nil
 	}
-	kextentNS := rb.Namespace
+	kextendNS := rb.Namespace
 	data := make(map[string]string)
 
 	matchClusters := []string{}
@@ -168,7 +168,7 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      PREFIX_NAME + rb.Name,
-			Namespace: kextentNS,
+			Namespace: kextendNS,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(rb, rb.GroupVersionKind()),
 			},
@@ -176,7 +176,7 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 		Data: data,
 	}
 	log.Println("reconcile to createOrUpdate configmap:", cm.Name)
-	if _, err := s.KubeClient.CoreV1().ConfigMaps(kextentNS).Create(context.TODO(), cm, metav1.CreateOptions{}); err != nil {
+	if _, err := s.KubeClient.CoreV1().ConfigMaps(kextendNS).Create(context.TODO(), cm, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("unable to create ConfigMap: %v", err)
 		}
@@ -203,7 +203,7 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 	op := &policyv1alpha1.OverridePolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      PREFIX_NAME + rb.Name,
-			Namespace: kextentNS,
+			Namespace: kextendNS,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(rb, rb.GroupVersionKind()),
 			},
@@ -221,7 +221,7 @@ func (s *KarmadaExtend) generateConfigMapFromRB(rb *workv1alpha2.ResourceBinding
 		},
 	}
 
-	err = s.createPPOrUpdate(kextentNS, rb, matchClusters)
+	err = s.createPPOrUpdate(kextendNS, rb, matchClusters)
 	if err != nil {
 		return nil
 	}
